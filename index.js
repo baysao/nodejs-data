@@ -66,7 +66,6 @@ function processRequest(Model, data, collectionState) {
 }
 
 function Controller(Model, Request) {
-    debugger;
     this._Model = Model;
     this._Request = Request;
     this._fields = {};
@@ -97,19 +96,19 @@ function _createControllerActionHandler(controllerObj, action) {
                     if(error) {
                         actionHandlerData.error = error;
                         controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
-                        return;
+                        return false;
                     }
 
                     if(!!data && (typeof data == "object")) {
                         actionHandlerData.data = data;
                         controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
-                        return;
+                        return true;
                     }
 
                     if((data === true) && (handling != null)) {
                         actionHandlerData.handling = handling;
                         controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
-                        return;
+                        return true;
                     }
                 }
 
@@ -169,7 +168,7 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
         newObj._client_fields[fields[key]] = key;
 
     return newObj;
-}
+};
 
 Controller.prototype.db = function(db) {this._Model.setDb(db)};
 
@@ -177,7 +176,7 @@ Controller.prototype.db = function(db) {this._Model.setDb(db)};
 Controller.prototype.processActionHandlerData = function(handlerData, callback) {
     if(handlerData.error) {
         callback({status: "error", error: handlerData.error});
-        return;
+        return false;
     }
 
     var parsedRequestData = handlerData.request_data,
@@ -191,22 +190,22 @@ Controller.prototype.processActionHandlerData = function(handlerData, callback) 
         if(data) {
             data = _mapData(data, this._client_fields, this._use_only_mapped_fields);
             callback({status: "read", data: data});
-            return;
+            return true;
         }
 
         processRequest(this._Model, {action: action}, collectionState).then(function(data) {
             if(data.status == "error") {
                 callback(data);
-                return;
+                return true;
             }
 
             data = _mapData(data.data, self._client_fields, self._use_only_mapped_fields);
             callback({status: "read", data: data});
         });
-        return;
+        return true;
     }
     else if(handlerData.handler_action == "data")
-        return;
+        return false;
 
     if(data)
         parsedRequestData.data = data;
@@ -216,6 +215,6 @@ Controller.prototype.processActionHandlerData = function(handlerData, callback) 
     processRequest(this._Model, parsedRequestData, collectionState).then(function(data) {
         callback(data);
     });
-}
+};
 
 module.exports = function(Model, Request) {return new Controller(Model, Request);};

@@ -1,15 +1,23 @@
 {
-  "name": "scheduler-mysql",
+  "name": "webix-data",
   "version": "1.0.0",
-  "description": "",
+  "description": "Package for communication between request and db webix packages",
   "main": "index.js",
+  "dependencies": {
+    "bluebird": "^2.9.25"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webix-hub/nodejs-data.git"
+  },
+  "author": "EgorLazarovich",
   "license": "ISC",
-  "dependencies": {
-    "bluebird": "^2.9.25",
-    "mysql": "^2.6.2"
-  }
+  "bugs": {
+    "url": "https://github.com/webix-hub/nodejs-data/issues"
+  },
+  "homepage": "https://github.com/webix-hub/nodejs-data"
 }
