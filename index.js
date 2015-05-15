@@ -1,36 +1,70 @@
 var Promise = require("bluebird");
 
+/**
+ * Get data.
+ * @param {Object} Model - database model.
+ * @param {Object} collectionState - data parameters.
+ * @returns {Promise}
+ */
 function getData(Model, collectionState) {
     return Model.getData(collectionState).then(function(data) {
         return {status: "read", data: data};
     });
 }
 
+/**
+ * Insert data.
+ * @param {Object} Model - database model.
+ * @param {Object} data - hash of data.
+ * @param {Object} collectionState - data parameters.
+ * @returns {Promise}
+ */
 function insertData(Model, data, collectionState) {
     return Model.insertData(data.data, collectionState).then(function(insertedData) {
         return {status: "inserted", source_id: data.id, target_id: insertedData.id || data.id};
     });
 }
 
+/**
+ * Update data.
+ * @param {Object} Model - database model.
+ * @param {Object} data - hash of data to update.
+ * @param {Object} collectionState - data parameters.
+ * @returns {Promise}
+ */
 function updateData(Model, data, collectionState) {
     return Model.updateData(data.id, data.data, collectionState).then(function(updatedData) {
         return {status: "updated", source_id: data.id, target_id: updatedData.id || data.id};
     });
 }
 
+/**
+ * Update data.
+ * @param {Object} Model - database model.
+ * @param {Object} data - contains ids for ordering. {id: ..., move_id: ...}
+ * @param {Object} collectionState - data parameters.
+ * @returns {Promise}
+ */
 function moveData(Model, data, collectionState) {
     return Model.changeOrderData(data.id, data.move_id, collectionState).then(function(result) {
         return {status: "moved", source_id: data.id, target_id: data.id};
     });
 }
 
+/**
+ * Delete data.
+ * @param {Object} Model - database model.
+ * @param {Object} data - contains property 'id' for deleting.
+ * @param {Object} collectionState - data parameters.
+ * @returns {Promise}
+ */
 function deleteData(Model, data, collectionState) {
     return Model.removeData(data.id, collectionState).then(function() {
         return {status: "deleted", source_id: data.id, target_id: data.id};
     });
 }
 
-function processRequest(Model, data, collectionState) {
+function _processRequest(Model, data, collectionState) {
     var actionPromise;
     switch(data.action) {
         case "read":
@@ -42,7 +76,7 @@ function processRequest(Model, data, collectionState) {
             break;
 
         case "update":
-            actionPromise = updateData(Model, data, collectionState)
+            actionPromise = updateData(Model, data, collectionState);
             break;
 
         case "move":
@@ -54,7 +88,7 @@ function processRequest(Model, data, collectionState) {
             break;
 
         default:
-            actionPromise = new Promise(function(reject, resolve) {
+            actionPromise = new Promise(function(reject) {
                 reject(new Error("Action '" + data.action + "' isn't support."));
             });
             break;
@@ -65,49 +99,78 @@ function processRequest(Model, data, collectionState) {
     });
 }
 
-function Controller(Model, Request) {
-    this._Model = Model;
-    this._Request = Request;
-    this._fields = {};
-    this._field_id = "id";
-    this._field_order = null;
-    this._client_fields = {};
-    this._use_only_mapped_fields = false;
-    this.crud = _createControllerActionHandler(this, "crud");
-    this.data = _createControllerActionHandler(this, "data");
+function _processActionHandlerData(controllerObj, handlerData, callback) {
+    if(handlerData.error) {
+        callback({status: "error", error: handlerData.error});
+        return false;
+    }
+
+    var parsedRequestData = handlerData.request_data,
+        action = parsedRequestData.action,
+        data = handlerData.data,
+        collectionState = {handling: handlerData.handling, field_id: controllerObj._field_id, field_order: controllerObj._field_order};
+
+    if(action == "read") {
+        if(data) {
+            data = _mapData(data, controllerObj._client_fields, controllerObj._use_only_mapped_fields);
+            callback({status: "read", data: data});
+            return true;
+        }
+
+        _processRequest(controllerObj._Model, {action: action}, collectionState).then(function(data) {
+            if(data.status == "error") {
+                callback(data);
+                return true;
+            }
+
+            data = _mapData(data.data, controllerObj._client_fields, controllerObj._use_only_mapped_fields);
+            callback({status: "read", data: data});
+        });
+        return true;
+    }
+    else if(handlerData.handler_action == "data")
+        return false;
+
+    if(data)
+        parsedRequestData.data = data;
+
+    parsedRequestData.data = _mapData(parsedRequestData.data, controllerObj._fields, controllerObj._use_only_mapped_fields);
+
+    _processRequest(controllerObj._Model, parsedRequestData, collectionState).then(function(data) {
+        callback(data);
+    });
 }
 
 function _createControllerActionHandler(controllerObj, action) {
     return function(handling, handler) {
         var db = controllerObj._Model.getDb();
-        
+
         if((arguments.length == 1) && (typeof handling == "function")) {
             handler = handling;
             handling = null;
         }
 
-        var self = this;
         return function(request, response) {
-            self._Request.processRequest(request, response, function(requestData, requestResolver) {
+            controllerObj._Request.processRequest(request, response, function(requestData, requestResolver) {
 
                 var actionHandlerData = {handler_action: action, request_data: requestData};
                 function _resolver(error, data) {
 
                     if(error) {
                         actionHandlerData.error = error;
-                        controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
+                        _processActionHandlerData(controllerObj, actionHandlerData, requestResolver);
                         return false;
                     }
 
                     if(!!data && (typeof data == "object")) {
                         actionHandlerData.data = data;
-                        controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
+                        _processActionHandlerData(controllerObj, actionHandlerData, requestResolver);
                         return true;
                     }
 
                     if((data === true) && (handling != null)) {
                         actionHandlerData.handling = handling;
-                        controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
+                        _processActionHandlerData(controllerObj, actionHandlerData, requestResolver);
                         return true;
                     }
                 }
@@ -126,7 +189,7 @@ function _createControllerActionHandler(controllerObj, action) {
                 }
                 else if(handling != null) {
                     actionHandlerData.handling = handling;
-                    controllerObj.processActionHandlerData(actionHandlerData, requestResolver);
+                    _processActionHandlerData(controllerObj, actionHandlerData, requestResolver);
                 }
             });
         }
@@ -157,6 +220,24 @@ function _mapData(data, mapData, useOnlyMapped) {
     return mappedData;
 }
 
+function Controller(Model, Request) {
+    this._Model = Model;
+    this._Request = Request;
+    this._fields = {};
+    this._field_id = "id";
+    this._field_order = null;
+    this._client_fields = {};
+    this._use_only_mapped_fields = false;
+    this.crud = _createControllerActionHandler(this, "crud");
+    this.data = _createControllerActionHandler(this, "data");
+}
+
+/**
+ * Set keys of data.
+ * @param {Object} fields - hash of data to mapping. Example: {"title": "my_db_title"}
+ * @param {boolean} useOnlyMappedFields
+ * @returns {Controller}
+ */
 Controller.prototype.map = function(fields, useOnlyMappedFields) {
     var newObj = new Controller(this._Model, this._Request);
     newObj._fields = fields;
@@ -170,51 +251,10 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
     return newObj;
 };
 
+/**
+ * Set object or connect string db.
+ * @param {Object} db
+ */
 Controller.prototype.db = function(db) {this._Model.setDb(db)};
-
-//Controller.prototype.processActionHandlerData = function(request, response, state) {
-Controller.prototype.processActionHandlerData = function(handlerData, callback) {
-    if(handlerData.error) {
-        callback({status: "error", error: handlerData.error});
-        return false;
-    }
-
-    var parsedRequestData = handlerData.request_data,
-        action = parsedRequestData.action;
-
-    var self = this,
-        data = handlerData.data,
-        collectionState = {handling: handlerData.handling, field_id: this._field_id, field_order: this._field_order};
-
-    if(action == "read") {
-        if(data) {
-            data = _mapData(data, this._client_fields, this._use_only_mapped_fields);
-            callback({status: "read", data: data});
-            return true;
-        }
-
-        processRequest(this._Model, {action: action}, collectionState).then(function(data) {
-            if(data.status == "error") {
-                callback(data);
-                return true;
-            }
-
-            data = _mapData(data.data, self._client_fields, self._use_only_mapped_fields);
-            callback({status: "read", data: data});
-        });
-        return true;
-    }
-    else if(handlerData.handler_action == "data")
-        return false;
-
-    if(data)
-        parsedRequestData.data = data;
-
-    parsedRequestData.data = _mapData(parsedRequestData.data, this._fields, this._use_only_mapped_fields);
-
-    processRequest(this._Model, parsedRequestData, collectionState).then(function(data) {
-        callback(data);
-    });
-};
 
 module.exports = function(Model, Request) {return new Controller(Model, Request);};
