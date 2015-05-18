@@ -7,76 +7,94 @@ and [webix-request] (https://github.com/webix-hub/nodejs-request), etc.
 How to use
 -----------
 
-- Installation
+### Installation
 
-    ```sh
-    npm install webix-data
-    ```
+```sh
+npm install webix-data
+```
 
-- How to use:
+### API
 
-    ```js
-    //Init handler.
-    var webixData = require("webix-data"),
-        webix_db = webixData(require("webix-mongo"), require("webix-request")); //For mysql you can use the 'webix-mysql' package.
+```js
+//Init handler.
+var webixData = require("webix-data"),
+webixDb = webixData(require("webix-mongo"), require("webix-request")); //For mysql you can use the 'webix-mysql' package.
+```
 
-    //API
-    /*
-        Map fields of data which will be used for db operations.
-        - fields - hash of db fields.
-        - useOnlyMappedFields - optional, if set 'true', for db operations will be used only set fields.
-            if set 'false' or ignore this parameter, for db operations will be used set and other fields.
+```js
+//Map fields of data which will be used for db operations.
+webixDb.map(fields, useOnlyMappedFields);
+```
 
-        method returns 'webix_db' object
-    */
-    webix_db.map(fields, useOnlyMappedFields);
+- fields - hash of db fields.
+- useOnlyMappedFields - optional, if set 'true', for db operations will be used only set fields.
+If set 'false' or ignore this parameter, for db operations will be used set and other fields.
 
-    /*
-        Set db object or string of connection for db operations.
-        - dataBase - db object or string of connection.
-    */
-    webix_db.db(dataBase);
+*Method returns 'webixDb' object*
 
-    /*
-        Create handler of requests for operations on data: create, read, update and delete.
-            For using this method you can use just one argument.
-        - handling - optional, name of collection (mongoDB) or table (mysql) which will be used for data operations.
-        - handler - optional, function-callback which you can use for changing of processing of request data.
-            This callback provides parameters 'state' and 'resolve'.
-            State object contains: db (object of db), response (object of response), request (object of request), id (id of data), data (without id), action (operation on data).
-            Resolve method needs for return data to CRUD handler. First parameter of "resolve" is error object or null, second parameter is:
-                data - CRUD handler will be use this data for its operations,
-                true - CRUD handler will be continue its operations,
-                false - CRUD handler will be stop its operations for current request.
-            
-    */
-    webix_db.crud(handling, handler);
+```js
+//Set db object or string of connection for db operations.
+webixDb.db(dataBase);
+```
 
-    Samples:
-        //app - it's express object.
-        //state - {db, response, request, id, data, action}
-        //resolve - function(error, data);
+- dataBase - db object or string of connection.
 
-        1)  app.all("/data", webix_db.crud("films"); // CRUD handler process operations for collection (MongoDB) or table (Mysql)
+```js
+//Create handler of requests for operations on data: create, read, update and delete.
+//For using this method you can use just one argument.
+webixDb.crud(handling, handler);
+```
 
-        2)  //When is used only handler, will be worked only reading operation. Other operation will be generate exception.
-            app.all("/data", webix_db.crud(function(state, resolve) {
-                var my_data = {title: "test text", id: 5}
-                resolve(null, my_data);
-            }));
+- handling - optional, name of collection (mongoDB) or table (mysql) which will be used for data operations.
+- handler - optional, function-callback which you can use for changing of processing of request data.
 
-        3)  app.all("/data", webix_db.crud("films", function(state, resolve) {
-                var my_data = {title: "my_title", id: 5}
-                resolve(null, my_data); //Process my_data for collection "films" for current operation (state.action).
-            }));
+Handler provides parameters:
 
-    /*
-        This method likes webix_db.crud, but works only with operation of reading.
-    */
-    webix_db.data(handling, handler);
+- state object which has fields:
+    - db (object of db).
+    - response (object of response).
+    - request (object of request).
+    - id (id of data).
+    - data (without id).
+    - action (operation on data).
+- function-resolver - needs for return data to CRUD handler. First parameter of "resolve" is error object or null, second parameter is:
+    - data - CRUD handler will be use this data for its operations.
+    - true - CRUD handler will be continue its operations.
+    - false - CRUD handler will be stop its operations for current request.
 
-    Full samples for this package you can see by [nodejs-example] (https://github.com/webix-hub/nodejs-example).
-    ```
+```js
+//This method likes webixDb.crud, but works only with operation of reading.
+webixDb.data(handling, handler);
+```
+
+### Samples
+
+```js
+//app - it's express object.
+//state - {db, response, request, id, data, action}
+//resolve - function(error, data);
+```
+
+```js
+app.all("/data", webixDb.crud("films"); // CRUD handler process operations for collection (MongoDB) or table (Mysql)
+```
+
+```js
+//When is used only handler, will be worked only reading operation. Other operation will be generate exception.
+app.all("/data", webixDb.crud(function(state, resolve) {
+    var my_data = {title: "test text", id: 5}
+    resolve(null, my_data);
+}));
+```
+
+```js
+app.all("/data", webixDb.crud("films", function(state, resolve) {
+    var my_data = {title: "my_title", id: 5}
+    resolve(null, my_data); //Process my_data for collection "films" for current operation (state.action).
+}));
+```
+
+*Full samples for this package you can see by [nodejs-example] (https://github.com/DHTMLX/nodejs-example).*
 
 That is it.
 
