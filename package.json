@@ -4,7 +4,8 @@
   "description": "Package for communication between request and db webix packages",
   "main": "index.js",
   "dependencies": {
-    "bluebird": "^2.9.25"
+    "bluebird": "^2.9.25",
+    "lodash": "^3.9.1"
   },
   "devDependencies": {},
   "scripts": {

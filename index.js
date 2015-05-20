@@ -1,4 +1,5 @@
-var Promise = require("bluebird");
+var Promise = require("bluebird"),
+    _ = require("lodash");
 
 /**
  * Get data.
@@ -105,14 +106,14 @@ function _processActionHandlerData(controllerObj, handlerData, callback) {
         return false;
     }
 
-    var parsedRequestData = handlerData.request_data,
-        action = parsedRequestData.action,
+    var requestStateData = handlerData.request_data,
+        action = requestStateData.action,
         data = handlerData.data,
-        collectionState = {handling: handlerData.handling, field_id: controllerObj._field_id, field_order: controllerObj._field_order};
+        collectionState = {handling: handlerData.handling, field_id: controllerObj._fields_settings.id, field_order: controllerObj._fields_settings.order};
 
     if(action == "read") {
         if(data) {
-            data = _mapData(data, controllerObj._client_fields, controllerObj._use_only_mapped_fields);
+            data = _mapData(controllerObj, data, "client");
             callback({status: "read", data: data});
             return true;
         }
@@ -123,7 +124,7 @@ function _processActionHandlerData(controllerObj, handlerData, callback) {
                 return true;
             }
 
-            data = _mapData(data.data, controllerObj._client_fields, controllerObj._use_only_mapped_fields);
+            data = _mapData(controllerObj, data.data, "client");
             callback({status: "read", data: data});
         });
         return true;
@@ -132,11 +133,11 @@ function _processActionHandlerData(controllerObj, handlerData, callback) {
         return false;
 
     if(data)
-        parsedRequestData.data = data;
+        requestStateData.data = data;
 
-    parsedRequestData.data = _mapData(parsedRequestData.data, controllerObj._fields, controllerObj._use_only_mapped_fields);
+    requestStateData.data = _mapData(controllerObj, requestStateData.data, "server");
 
-    _processRequest(controllerObj._Model, parsedRequestData, collectionState).then(function(data) {
+    _processRequest(controllerObj._Model, requestStateData, collectionState).then(function(data) {
         callback(data);
     });
 }
@@ -151,9 +152,11 @@ function _createControllerActionHandler(controllerObj, action) {
         }
 
         return function(request, response) {
-            controllerObj._Request.processRequest(request, response, function(requestData, requestResolver) {
+            var state = {request: request, response: response, fields_anchors: controllerObj._rfields_anchors};
+            controllerObj._Request.processRequest(state, function(requestData, requestResolver) {
+                var requestStateData = _getRequestStateData(controllerObj, requestData),
+                    actionHandlerData = {handler_action: action, request_data: requestStateData};
 
-                var actionHandlerData = {handler_action: action, request_data: requestData};
                 function _resolver(error, data) {
 
                     if(error) {
@@ -180,10 +183,8 @@ function _createControllerActionHandler(controllerObj, action) {
                     if(action != "crud")
                         handler.apply(null, [state, _resolver]);
                     else {
-                        state.id = requestData.id;
-                        state.data = requestData.data;
-                        state.action = requestData.action;
-
+                        state = _getRequestStateData(controllerObj, requestData, state);
+                        state.data = _mapData(controllerObj, state.data, "server");
                         handler.apply(null, [state, _resolver]);
                     }
                 }
@@ -196,26 +197,54 @@ function _createControllerActionHandler(controllerObj, action) {
     }
 }
 
-function _mapData(data, mapData, useOnlyMapped) {
+function _getRequestStateData(controllerObj, requestData, state) {
+    state = state || {};
+    requestData = _.clone(requestData, true);
 
-    function _map(data, mapData) {
+    var fieldsAnchors = controllerObj._fields_anchors,
+        fieldId = fieldsAnchors.id || "id";
+
+    state.id = requestData.data[fieldId];
+    delete requestData.data[fieldId];
+    state.action = state.action || requestData.action;
+    delete requestData.action;
+    state.data = requestData.data;
+    return state;
+}
+
+function _mapData(controllerObj, data, fieldsType) {
+
+    function _getFieldByAnchor(field, fieldsAnchors) {
+        for(var key in fieldsAnchors) {
+            if(field == fieldsAnchors[key])
+                return key;
+        }
+    }
+
+    function _map(data, fields, fieldsAnchors, useOnlyMapped) {
         var mappedData = {};
         for(var key in data) {
-            if(mapData.hasOwnProperty(key))
-                mappedData[mapData[key]] = data[key];
+            var fieldByAnchor = _getFieldByAnchor(key, fieldsAnchors);
+
+            if(fields.hasOwnProperty(key) || fieldByAnchor)
+                mappedData[fields[key] || fieldByAnchor] = data[key];
             else if(!useOnlyMapped)
                 mappedData[key] = data[key];
         }
         return mappedData;
     }
 
-    var mappedData = [];
+    var mappedData = [],
+        fields = (fieldsType == "client") ? controllerObj._client_fields : controllerObj._server_fields,
+        fieldsAnchors = controllerObj._fields_anchors,
+        useOnlyMapped = controllerObj._use_only_mapped_fields;
+
     if(data instanceof Array) {
         for(var i = 0; i < data.length; i++)
-            mappedData.push(_map(data[i], mapData));
+            mappedData.push(_map(data[i], fields, fieldsAnchors, useOnlyMapped));
     }
     else
-        mappedData = _map(data, mapData);
+        mappedData = _map(data, fields, fieldsAnchors, useOnlyMapped);
 
     return mappedData;
 }
@@ -223,14 +252,23 @@ function _mapData(data, mapData, useOnlyMapped) {
 function Controller(Model, Request) {
     this._Model = Model;
     this._Request = Request;
-    this._fields = {};
-    this._field_id = "id";
-    this._field_order = null;
+    this._server_fields = {};
     this._client_fields = {};
+    this._fields_settings = {id: "id", order: null};
+    this._fields_anchors = {id: "id", order: "order"};
     this._use_only_mapped_fields = false;
     this.crud = _createControllerActionHandler(this, "crud");
     this.data = _createControllerActionHandler(this, "data");
 }
+
+Controller.prototype.setFieldsAnchors = function(fieldsAnchors) {
+    for(var field in fieldsAnchors) {
+        var anchor = fieldsAnchors[field];
+        this._fields_anchors[field] = anchor;
+    }
+
+    return this;
+};
 
 /**
  * Set keys of data.
@@ -240,9 +278,10 @@ function Controller(Model, Request) {
  */
 Controller.prototype.map = function(fields, useOnlyMappedFields) {
     var newObj = new Controller(this._Model, this._Request);
-    newObj._fields = fields;
-    newObj._field_id = fields.id || newObj._field_id;
-    newObj._field_order = fields.order || newObj._field_order;
+    newObj._server_fields = fields;
+    newObj._fields_settings.id = fields.id || newObj._fields_settings.id;
+    newObj._fields_settings.order = fields.order || newObj._fields_settings.order;
+    newObj._fields_anchors = this._fields_anchors;
     newObj._use_only_mapped_fields = !!useOnlyMappedFields;
 
     for(var key in fields)
