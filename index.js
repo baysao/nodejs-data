@@ -1,16 +1,56 @@
 var Promise = require("bluebird"),
     _ = require("lodash");
 
+const FIELD_ID = "id";
+const FIELD_ORDER = "order";
+const FIELD_PARENT_ID = "parent_id";
+
 /**
  * Get data.
- * @param {Object} Model - database model.
+ * @param {Controller} controllerObj - controller object.
  * @param {Object} collectionState - data parameters.
  * @returns {Promise}
  */
-function getData(Model, collectionState) {
-    return Model.getData(collectionState).then(function(data) {
+function getData(controllerObj, data, collectionState) {
+    return controllerObj._Model.getData(collectionState).then(function(data) {
+        if(controllerObj._data_type == "tree")
+            data = _dataToTree(data);
+
         return {status: "read", data: data};
     });
+
+    function _dataToTree(data) {
+
+        var dataHash = _arrayToHash(data, "id"),
+            rootElements = [];
+
+        for(var key in dataHash) {
+            var data = dataHash[key],
+                parentId = data[FIELD_PARENT_ID];
+
+            if(!dataHash.hasOwnProperty(parentId)) {
+                rootElements.push(data);
+                continue;
+            }
+
+            var parent = dataHash[parentId];
+            parent.data = parent.data || [];
+            parent.data.push(data);
+        }
+
+        return rootElements;
+    }
+}
+
+function _arrayToHash(dataArray, keyField) {
+    var hash = {};
+    for(var i = 0; i < dataArray.length; i++) {
+        var data = dataArray[i],
+            key = data[keyField];
+
+        hash[key] = data;
+    }
+    return hash;
 }
 
 /**
@@ -20,8 +60,8 @@ function getData(Model, collectionState) {
  * @param {Object} collectionState - data parameters.
  * @returns {Promise}
  */
-function insertData(Model, data, collectionState) {
-    return Model.insertData(data.data, collectionState).then(function(insertedData) {
+function insertData(controllerObj, data, collectionState) {
+    return controllerObj._Model.insertData(data.data, collectionState).then(function(insertedData) {
         return {status: "inserted", source_id: data.id, target_id: insertedData.id || data.id};
     });
 }
@@ -33,8 +73,8 @@ function insertData(Model, data, collectionState) {
  * @param {Object} collectionState - data parameters.
  * @returns {Promise}
  */
-function updateData(Model, data, collectionState) {
-    return Model.updateData(data.id, data.data, collectionState).then(function(updatedData) {
+function updateData(controllerObj, data, collectionState) {
+    return controllerObj._Model.updateData(data.id, data.data, collectionState).then(function(updatedData) {
         return {status: "updated", source_id: data.id, target_id: updatedData.id || data.id};
     });
 }
@@ -46,8 +86,8 @@ function updateData(Model, data, collectionState) {
  * @param {Object} collectionState - data parameters.
  * @returns {Promise}
  */
-function moveData(Model, data, collectionState) {
-    return Model.changeOrderData(data.id, data.move_id, collectionState).then(function(result) {
+function moveData(controllerObj, data, collectionState) {
+    return controllerObj._Model.changeOrderData(data.id, data.move_id, collectionState).then(function(result) {
         return {status: "moved", source_id: data.id, target_id: data.id};
     });
 }
@@ -59,33 +99,33 @@ function moveData(Model, data, collectionState) {
  * @param {Object} collectionState - data parameters.
  * @returns {Promise}
  */
-function deleteData(Model, data, collectionState) {
-    return Model.removeData(data.id, collectionState).then(function() {
+function deleteData(controllerObj, data, collectionState) {
+    return controllerObj._Model.removeData(data.id, collectionState).then(function() {
         return {status: "deleted", source_id: data.id, target_id: data.id};
     });
 }
 
-function _processRequest(Model, data, collectionState) {
+function _processRequest(controllerObj, data, collectionState) {
     var actionPromise;
     switch(data.action) {
         case "read":
-            actionPromise = getData(Model, collectionState);
+            actionPromise = getData(controllerObj, data, collectionState);
             break;
 
         case "insert":
-            actionPromise = insertData(Model, data, collectionState);
+            actionPromise = insertData(controllerObj, data, collectionState);
             break;
 
         case "update":
-            actionPromise = updateData(Model, data, collectionState);
+            actionPromise = updateData(controllerObj, data, collectionState);
             break;
 
         case "move":
-            actionPromise = moveData(Model, data, collectionState);
+            actionPromise = moveData(controllerObj, data, collectionState);
             break;
 
         case "delete":
-            actionPromise = deleteData(Model, data, collectionState);
+            actionPromise = deleteData(controllerObj, data, collectionState);
             break;
 
         default:
@@ -118,7 +158,7 @@ function _processActionHandlerData(controllerObj, handlerData, callback) {
             return true;
         }
 
-        _processRequest(controllerObj._Model, {action: action}, collectionState).then(function(data) {
+        _processRequest(controllerObj, requestStateData, collectionState).then(function(data) {
             if(data.status == "error") {
                 callback(data);
                 return true;
@@ -137,7 +177,7 @@ function _processActionHandlerData(controllerObj, handlerData, callback) {
 
     requestStateData.data = _mapData(controllerObj, requestStateData.data, "server");
 
-    _processRequest(controllerObj._Model, requestStateData, collectionState).then(function(data) {
+    _processRequest(controllerObj, requestStateData, collectionState).then(function(data) {
         callback(data);
     });
 }
@@ -152,13 +192,12 @@ function _createControllerActionHandler(controllerObj, action) {
         }
 
         return function(request, response) {
-            var state = {request: request, response: response, fields_anchors: controllerObj._rfields_anchors};
+            var state = {request: request, response: response};
             controllerObj._Request.processRequest(state, function(requestData, requestResolver) {
                 var requestStateData = _getRequestStateData(controllerObj, requestData),
                     actionHandlerData = {handler_action: action, request_data: requestStateData};
 
                 function _resolver(error, data) {
-
                     if(error) {
                         actionHandlerData.error = error;
                         _processActionHandlerData(controllerObj, actionHandlerData, requestResolver);
@@ -204,7 +243,7 @@ function _getRequestStateData(controllerObj, requestData, state) {
     var fieldsAnchors = controllerObj._fields_anchors,
         fieldId = fieldsAnchors.id || "id";
 
-    state.id = requestData.data[fieldId];
+    state.id = (requestData.data[fieldId] || "").toString();
     delete requestData.data[fieldId];
     state.action = state.action || requestData.action;
     delete requestData.action;
@@ -222,10 +261,9 @@ function _mapData(controllerObj, data, fieldsType) {
     }
 
     function _map(data, fields, fieldsAnchors, useOnlyMapped) {
-        var mappedData = {};
+        var mappedData = Array.isArray(data) ? [] : {};
         for(var key in data) {
             var fieldByAnchor = _getFieldByAnchor(key, fieldsAnchors);
-
             if(fields.hasOwnProperty(key) || fieldByAnchor)
                 mappedData[fields[key] || fieldByAnchor] = data[key];
             else if(!useOnlyMapped)
@@ -239,19 +277,44 @@ function _mapData(controllerObj, data, fieldsType) {
         fieldsAnchors = controllerObj._fields_anchors,
         useOnlyMapped = controllerObj._use_only_mapped_fields;
 
-    if(data instanceof Array) {
-        for(var i = 0; i < data.length; i++)
-            mappedData.push(_map(data[i], fields, fieldsAnchors, useOnlyMapped));
-    }
-    else
-        mappedData = _map(data, fields, fieldsAnchors, useOnlyMapped);
+    //if(controllerObj._data_type == "tree") {
+    //    debugger;
+    //    for(var key in data) {
+    //        var currentData = data[key];
+    //
+    //        if(typeof currentData == "object") {
+    //            data[key] = _mapData(controllerObj, currentData, fieldsType);
+    //        }
+    //    }
+    //
+    //    return _map(data, fields, fieldsAnchors, useOnlyMapped);
+    //}
 
-    return mappedData;
+    for(var key in data) {
+        var currentData = data[key];
+
+        if(typeof currentData == "object") {
+            data[key] = _mapData(controllerObj, currentData, fieldsType);
+        }
+
+    }
+
+    return _map(data, fields, fieldsAnchors, useOnlyMapped);
+
+    //if(data instanceof Array) {
+    //    for(var i = 0; i < data.length; i++)
+    //        mappedData.push(_map(data[i], fields, fieldsAnchors, useOnlyMapped));
+    //}
+    //else
+    //    mappedData = _map(data, fields, fieldsAnchors, useOnlyMapped);
+
+    //return mappedData;
 }
 
 function Controller(Model, Request) {
     this._Model = Model;
     this._Request = Request;
+    this._data_type = "";
     this._server_fields = {};
     this._client_fields = {};
     this._fields_settings = {id: "id", order: null};
@@ -283,6 +346,7 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
     newObj._fields_settings.order = fields.order || newObj._fields_settings.order;
     newObj._fields_anchors = this._fields_anchors;
     newObj._use_only_mapped_fields = !!useOnlyMappedFields;
+    newObj._data_type = this._data_type;
 
     for(var key in fields)
         newObj._client_fields[fields[key]] = key;
@@ -294,6 +358,12 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
  * Set object or connect string db.
  * @param {Object} db
  */
-Controller.prototype.db = function(db) {this._Model.setDb(db)};
+Controller.prototype.db = function(db) {this._Model.setDb(db);};
+
+Controller.prototype.tree = function(db) {
+    this.setFieldsAnchors({parent_id: "parent"});
+    this._data_type = "tree";
+    this.db(db);
+};
 
 module.exports = function(Model, Request) {return new Controller(Model, Request);};
