@@ -1,9 +1,4 @@
-var Promise = require("bluebird"),
-    ActionHandler = require("./handlers/ActionHandler");
-
-const FIELD_ID = "id";
-const FIELD_ORDER = "order";
-const FIELD_PARENT_ID = "parent_id";
+var ActionHandler = require("./handlers/ActionHandler");
 
 function Controller(model, request) {
     this.model = model;
