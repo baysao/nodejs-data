@@ -47,9 +47,9 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     requestData = _.clone(requestData, true);
 
     //Get id field or his anchor data.
-    state.id = (this.data_handler.getFieldData(requestData.data, "id") || "").toString();
+    state.id = (this.data_handler.getFieldDataByAnchor(requestData.data, "id") || "").toString();
     //Delete id field or his anchor.
-    requestData.data = this.data_handler.deleteFieldData(requestData.data, "id");
+    requestData.data = this.data_handler.deleteFieldDataByAnchor(requestData.data, "id");
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;
@@ -92,7 +92,7 @@ ActionHandler.prototype.createActionHandler = function(action) {
                 }
 
                 if(handler) {
-                    var state = {db: self.getDb(), response: response, request: request};
+                    var state = {db: self.controller.model.getDb(), response: response, request: request};
                     if(action != "crud")
                         handler.apply(null, [state, _resolver]);
                     else {
@@ -121,9 +121,13 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
         data = handlerData.data,
         collectionState = {
             handling: handlerData.handling,
-            field_id: this.controller._fields_settings.id,
-            field_order: this.controller._fields_settings.order
+            field_id: this.data_handler.getFieldByAnchor("id"),
+            field_order: null
         };
+
+    var fieldOrder = this.data_handler.getFieldByAnchor("order");
+    if(this.controller.isFieldMapped())
+        collectionState.field_order = fieldOrder;
 
     if(action == "read") {
         if(data) {
