@@ -46,6 +46,7 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     state = state || {};
     requestData = _.clone(requestData, true);
 
+    requestData.data = this._dataHandler.mapData(requestData.data, "server");
     //Get id field or his anchor data.
     state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, "id") || "").toString();
     //Delete id field or his anchor.
