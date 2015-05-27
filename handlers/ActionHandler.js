@@ -2,32 +2,32 @@ var DataHandler = require("./DataHandler"),
     Promise = require("bluebird"),
     _ = require("lodash");
 
-function ActionHandler(controllerObj) {
-    this.data_handler = new DataHandler(controllerObj);
-    this.controller = controllerObj;
+function ActionHandler(controllerProvider) {
+    this._controllerProvider = controllerProvider;
+    this._dataHandler = new DataHandler(controllerProvider);
 }
 
 ActionHandler.prototype.processRequest = function(requestState, collectionState) {
     var actionPromise;
     switch(requestState.action) {
         case "read":
-            actionPromise = this.data_handler.getData(collectionState);
+            actionPromise = this._dataHandler.getData(collectionState);
             break;
 
         case "insert":
-            actionPromise = this.data_handler.insertData(requestState, collectionState);
+            actionPromise = this._dataHandler.insertData(requestState, collectionState);
             break;
 
         case "update":
-            actionPromise = this.data_handler.updateData(requestState, collectionState);
+            actionPromise = this._dataHandler.updateData(requestState, collectionState);
             break;
 
         case "move":
-            actionPromise = this.data_handler.moveData(requestState, collectionState);
+            actionPromise = this._dataHandler.moveData(requestState, collectionState);
             break;
 
         case "delete":
-            actionPromise = this.data_handler.deleteData(requestState, collectionState);
+            actionPromise = this._dataHandler.deleteData(requestState, collectionState);
             break;
 
         default:
@@ -47,9 +47,9 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     requestData = _.clone(requestData, true);
 
     //Get id field or his anchor data.
-    state.id = (this.data_handler.getFieldDataByAnchor(requestData.data, "id") || "").toString();
+    state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, "id") || "").toString();
     //Delete id field or his anchor.
-    requestData.data = this.data_handler.deleteFieldDataByAnchor(requestData.data, "id");
+    requestData.data = this._dataHandler.deleteFieldDataByAnchor(requestData.data, "id");
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;
@@ -67,7 +67,7 @@ ActionHandler.prototype.createActionHandler = function(action) {
 
         return function(request, response) {
             var state = {request: request, response: response};
-            self.controller.request.processRequest(state, function(requestData, requestResolver) {
+            self._controllerProvider.getRequestObj().processRequest(state, function(requestData, requestResolver) {
                 var requestStateData = self.getRequestStateData(requestData),
                     actionHandlerData = {handler_action: action, request_data: requestStateData};
 
@@ -92,12 +92,12 @@ ActionHandler.prototype.createActionHandler = function(action) {
                 }
 
                 if(handler) {
-                    var state = {db: self.controller.model.getDb(), response: response, request: request};
+                    var state = {db: self._controllerProvider.getModelObj().getDb(), response: response, request: request};
                     if(action != "crud")
                         handler.apply(null, [state, _resolver]);
                     else {
                         state = self.getRequestStateData(requestData, state);
-                        state.data = self.data_handler.mapData(state.data, "server");
+                        state.data = self._dataHandler.mapData(state.data, "server");
                         handler.apply(null, [state, _resolver]);
                     }
                 }
@@ -121,17 +121,17 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
         data = handlerData.data,
         collectionState = {
             handling: handlerData.handling,
-            field_id: this.data_handler.getFieldByAnchor("id"),
+            field_id: this._dataHandler.getFieldByAnchor("id"),
             field_order: null
         };
 
-    var fieldOrder = this.data_handler.getFieldByAnchor("order");
-    if(this.controller.isFieldMapped())
+    var fieldOrder = this._dataHandler.getFieldByAnchor("order");
+    if(this._controllerProvider.isFieldMapped("order"))
         collectionState.field_order = fieldOrder;
 
     if(action == "read") {
         if(data) {
-            data = this.data_handler.mapData(data, "client");
+            data = this._dataHandler.mapData(data, "client");
             callback({status: "read", data: data});
             return true;
         }
@@ -143,7 +143,7 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
                 return true;
             }
 
-            data = self.data_handler.mapData(data.data, "client");
+            data = self._dataHandler.mapData(data.data, "client");
             callback({status: "read", data: data});
         });
         return true;
@@ -154,7 +154,7 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
     if(data)
         requestStateData.data = data;
 
-    requestStateData.data = this.data_handler.mapData(requestStateData.data, "server");
+    requestStateData.data = this._dataHandler.mapData(requestStateData.data, "server");
 
     this.processRequest(requestStateData, collectionState).then(function(data) {
         callback(data);

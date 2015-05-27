@@ -2,21 +2,21 @@ var Promise = require("bluebird"),
     Tree = require("../data_types/Tree"),
     _ = require("lodash");
 
-function DataHandler(controllerObj) {
-    this.controller = controllerObj;
+function DataHandler(controllerProvider) {
+    this._controllerProvider = controllerProvider;
 }
 
 DataHandler.prototype.deleteData = function(requestState, collectionState) {
-    var dataType = this.controller._data_type;
+    var dataType = this._controllerProvider.getDataType();
     if(dataType != "tree") {
-        return this.controller.model.removeData(requestState.id, collectionState).then(function () {
+        return this._controllerProvider.getModelObj().removeData(requestState.id, collectionState).then(function () {
             return {status: "deleted", source_id: requestState.id, target_id: requestState.id};
         });
     }
 
     var self = this;
-    return this.controller.model.getData(collectionState).then(function(data) {
-        var treeObj = new Tree(data, self.controller._fields_anchors),
+    return this._controllerProvider.getModelObj().getData(collectionState).then(function(data) {
+        var treeObj = new Tree(data, self._controllerProvider.getFieldsAnchors()),
             branchElements = treeObj.getBranchElements(requestState.id),
             promises = [];
 
@@ -24,7 +24,7 @@ DataHandler.prototype.deleteData = function(requestState, collectionState) {
             var element = branchElements[i],
                 elementId = element[treeObj._field_id];
 
-            var promise = self.controller.model.removeData(elementId, collectionState);
+            var promise = self._controllerProvider.getModelObj().removeData(elementId, collectionState);
             promises.push(promise);
         }
         return Promise.all(promises);
@@ -34,32 +34,32 @@ DataHandler.prototype.deleteData = function(requestState, collectionState) {
 };
 
 DataHandler.prototype.moveData = function(requestState, collectionState) {
-    return this.controller.model.changeOrderData(requestState.id, requestState.move_id, collectionState).then(function(result) {
+    return this._controllerProvider.getModelObj().changeOrderData(requestState.id, requestState.move_id, collectionState).then(function(result) {
         return {status: "moved", source_id: requestState.id, target_id: requestState.id};
     });
 };
 
 DataHandler.prototype.updateData = function(requestState, collectionState) {
     var fieldId = this.getFieldByAnchor("id");
-    return this.controller.model.updateData(requestState.id, requestState.data, collectionState).then(function(updatedData) {
+    return this._controllerProvider.getModelObj().updateData(requestState.id, requestState.data, collectionState).then(function(updatedData) {
         return {status: "updated", source_id: requestState.id, target_id: updatedData[fieldId] || requestState.id};
     });
 };
 
 DataHandler.prototype.insertData = function(requestState, collectionState) {
     var fieldId = this.getFieldByAnchor("id");
-    return this.controller.model.insertData(requestState.data, collectionState).then(function(insertedData) {
+    return this._controllerProvider.getModelObj().insertData(requestState.data, collectionState).then(function(insertedData) {
         return {status: "inserted", source_id: requestState.id, target_id: insertedData[fieldId] || requestState.id};
     });
 };
 
 DataHandler.prototype.getData = function(collectionState) {
-    var dataType = this.controller._data_type,
+    var dataType = this._controllerProvider.getDataType(),
         self = this;
 
-    return this.controller.model.getData(collectionState).then(function(data) {
+    return this._controllerProvider.getModelObj().getData(collectionState).then(function(data) {
         if(dataType == "tree") {
-            var treeObj = new Tree(data, self.getFieldByAnchor(self.controller._fields_anchors));
+            var treeObj = new Tree(data, self.getFieldByAnchor(self._controllerProvider.getFieldsAnchors()));
             data = treeObj.get();
         }
 
@@ -74,7 +74,7 @@ DataHandler.prototype.mapData = function(data, fieldsType) {
         for(var key in data) {
             if(fields.hasOwnProperty(key))
                 mappedData[fields[key]] = data[key];
-            else if(!self.controller._use_only_mapped_fields)
+            else if(!self._controllerProvider.getUseOnlyMappedFields())
                 mappedData[key] = data[key];
         }
         return mappedData;
@@ -87,17 +87,17 @@ DataHandler.prototype.mapData = function(data, fieldsType) {
 
     }
 
-    var fields = (fieldsType == "client") ? this.controller._client_fields : this.controller._server_fields;
+    var fields = this._controllerProvider.getFields(fieldsType);
     return _map(data, fields);
 };
 
 DataHandler.prototype.getFieldByAnchor = function(anchor) {
     var self = this;
     function _getField(anchor) {
-        var fieldsAnchors = self.controller._fields_anchors,
+        var fieldsAnchors = self._controllerProvider.getFieldsAnchors(),
             field = fieldsAnchors[anchor];
 
-        return self.controller._server_fields[field] || field;
+        return self._controllerProvider.getFields("server")[field] || field;
     }
 
     if(typeof anchor == "object") {
@@ -109,7 +109,7 @@ DataHandler.prototype.getFieldByAnchor = function(anchor) {
     }
 
     return _getField(anchor);
-}
+};
 
 DataHandler.prototype.getFieldDataByAnchor = function(data, anchor) {
     return data[this.getFieldByAnchor(anchor)];

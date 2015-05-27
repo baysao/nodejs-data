@@ -26,7 +26,6 @@ function Tree(data, fields) {
 }
 
 Tree.prototype._dataToTree = function(data) {
-    debugger;
     data = _.clone(data, true);
 
     var dataHash = _arrayToHash(data, this._field_id),
@@ -46,7 +45,15 @@ Tree.prototype._dataToTree = function(data) {
         parent.data.push(data);
     }
 
-    return {tree: rootElements, elements: dataHash};
+    var rootObj = {};
+    for(var i = 0; i < rootElements.length; i++) {
+        var rootElement = rootElements[i];
+        rootObj[this._field_parent_id] = rootElements[0][this._field_parent_id];
+        rootObj.data = rootObj.data || [];
+        rootObj.data.push(rootElement);
+    }
+
+    return {tree: rootObj, elements: dataHash};
 };
 
 Tree.prototype._getElementById = function(id) {

@@ -1,30 +1,22 @@
-var ActionHandler = require("./handlers/ActionHandler");
+var ActionHandler = require("./handlers/ActionHandler"),
+    ControllerProvider = require("./providers/ControllerProvider");
 
 function Controller(model, request) {
-    this.model = model;
-    this.request = request;
+    this._controllerProvider = new ControllerProvider(this);
+    this._model = model;
+    this._request = request;
     this._data_type = "";
     this._server_fields = {};
     this._client_fields = {};
     this._fields_anchors = {};
     this._use_only_mapped_fields = false;
 
-    this.setFieldsAnchors({id: "id", order: "order"});
+    this._controllerProvider.setFieldsAnchors({id: "id", order: "order"});
 
-    var actionHandlerObj = new ActionHandler(this);
+    var actionHandlerObj = new ActionHandler(this._controllerProvider);
     this.crud = actionHandlerObj.createActionHandler("crud");
     this.data = actionHandlerObj.createActionHandler("data");
 }
-
-Controller.prototype.setDataType = function(dataType) {
-    this._data_type = dataType;
-    return this;
-};
-
-Controller.prototype.setFieldsAnchors = function(fieldsAnchors) {
-    for(var field in fieldsAnchors)
-        this._fields_anchors[field] = fieldsAnchors[field];
-};
 
 /**
  * Set keys of data.
@@ -33,7 +25,7 @@ Controller.prototype.setFieldsAnchors = function(fieldsAnchors) {
  * @returns {Controller}
  */
 Controller.prototype.map = function(fields, useOnlyMappedFields) {
-    var newObj = new Controller(this.model, this.request);
+    var newObj = new Controller(this._model, this._request);
     newObj._server_fields = fields;
     newObj._fields_anchors = this._fields_anchors;
     newObj._use_only_mapped_fields = !!useOnlyMappedFields;
@@ -45,19 +37,21 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
     return newObj;
 };
 
-Controller.prototype.isFieldMapped = function(field) {
-    return this._server_fields.hasOwnProperty(field);
-}
-
 /**
  * Set object or connect string db.
  * @param {Object} db
  */
-Controller.prototype.db = function(db) {this.model.setDb(db);};
+Controller.prototype.db = function(db) {this._model.setDb(db);};
 
 Controller.prototype.tree = function(db) {
-    this.setFieldsAnchors({parent_id: "parent"});
-    this.setDataType("tree");
+    this._controllerProvider.setFieldsAnchors({parent_id: "parent"});
+    this._controllerProvider.setDataType("tree");
+    this.db(db);
+};
+
+Controller.prototype.treeDynamic = function(db) {
+    this._controllerProvider.setFieldsAnchors({parent_id: "parent"});
+    this._controllerProvider.setDataType("tree");
     this.db(db);
 };
 
