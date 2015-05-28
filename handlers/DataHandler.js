@@ -1,5 +1,4 @@
 var Promise = require("bluebird"),
-    ControllerProvider = require("../providers/ControllerProvider"),
     Tree = require("../data_types/Tree"),
     _ = require("lodash");
 
@@ -10,9 +9,9 @@ function DataHandler(controllerProvider) {
 
     this._getTreeFields = function() {
         var fields = {};
-        fields.id = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
-        fields.parent_id = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_PARENT_ID);
-        fields.children = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN);
+        fields.id = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID);
+        fields.parent_id = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_PARENT_ID);
+        fields.children = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN);
         return fields;
     }
 }
@@ -51,15 +50,19 @@ DataHandler.prototype.moveData = function(requestState, collectionState) {
 };
 
 DataHandler.prototype.updateData = function(requestState, collectionState) {
-    var fieldId = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
-    return this._controllerProvider.getModelObj().updateData(requestState.id, requestState.data, collectionState).then(function(updatedData) {
+    var controllerProvider = this._controllerProvider,
+        fieldId = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID);
+
+    return controllerProvider.getModelObj().updateData(requestState.id, requestState.data, collectionState).then(function(updatedData) {
         return {status: "updated", source_id: requestState.id, target_id: updatedData[fieldId] || requestState.id};
     });
 };
 
 DataHandler.prototype.insertData = function(requestState, collectionState) {
-    var fieldId = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
-    return this._controllerProvider.getModelObj().insertData(requestState.data, collectionState).then(function(insertedData) {
+    var controllerProvider = this._controllerProvider,
+        fieldId = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID);
+
+    return controllerProvider.getModelObj().insertData(requestState.data, collectionState).then(function(insertedData) {
         return {status: "inserted", source_id: requestState.id, target_id: insertedData[fieldId] || requestState.id};
     });
 };
@@ -70,16 +73,16 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
         self = this;
 
     return controllerProvider.getModelObj().getData(collectionState).then(function(data) {
-        if(dataType == ControllerProvider.DATA_TYPE_TREE) {
+        if(dataType == controllerProvider.DATA_TYPE_TREE) {
             var treeObj = new Tree(data, self._getTreeFields());
-            if(controllerProvider.getDataLoadingType() == ControllerProvider.LOADING_TYPE_DYNAMIC) {
-                var anchorFieldTreeSelection = self.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_TREE_SELECTION),
-                    anchorFieldParentId = self.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_PARENT_ID),
-                    anchorFieldId = self.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID),
+            if(controllerProvider.getDataLoadingType() == controllerProvider.LOADING_TYPE_DYNAMIC) {
+                var anchorFieldTreeSelection = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_TREE_SELECTION),
+                    anchorFieldParentId = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_PARENT_ID),
+                    anchorFieldId = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
                     treeItemId = "";
 
                 if(anchorFieldTreeSelection == anchorFieldParentId)
-                    treeItemId = self.getFieldDataByAnchor(requestState.data, ControllerProvider.ANCHOR_FIELD_PARENT_ID);
+                    treeItemId = self.getFieldDataByAnchor(requestState.data, controllerProvider.ANCHOR_FIELD_PARENT_ID);
                 else if(anchorFieldTreeSelection == anchorFieldId)
                     treeItemId = requestState.id;
 

@@ -1,16 +1,16 @@
 function ControllerProvider(controllerObj) {
+    this.DATA_TYPE_DEFAULT = "default";
+    this.DATA_TYPE_TREE = "tree";
+    this.LOADING_TYPE_STATIC = "static";
+    this.LOADING_TYPE_DYNAMIC = "dynamic";
+    this.ANCHOR_FIELD_ID = "id";
+    this.ANCHOR_FIELD_PARENT_ID = "parent_id";
+    this.ANCHOR_FIELD_ORDER = "order";
+    this.ANCHOR_FIELD_NODE_HAS_CHILDREN = "$tree_node_has_childer";
+    this.ANCHOR_FIELD_TREE_SELECTION = "$tree_selection_field_id";
+
     this._controller = controllerObj;
 }
-
-ControllerProvider.DATA_TYPE_DEFAULT = "default";
-ControllerProvider.DATA_TYPE_TREE = "tree";
-ControllerProvider.LOADING_TYPE_STATIC = "static";
-ControllerProvider.LOADING_TYPE_DYNAMIC = "dynamic";
-ControllerProvider.ANCHOR_FIELD_ID = "id";
-ControllerProvider.ANCHOR_FIELD_PARENT_ID = "parent_id";
-ControllerProvider.ANCHOR_FIELD_ORDER = "order";
-ControllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN = "$tree_node_has_childer";
-ControllerProvider.ANCHOR_FIELD_TREE_SELECTION = "$tree_selection_field_id";
 
 ControllerProvider.prototype.getModelObj = function() {
     return this._controller._model;

@@ -1,5 +1,4 @@
-var ControllerProvider = require("../providers/ControllerProvider"),
-    DataHandler = require("./DataHandler"),
+var DataHandler = require("./DataHandler"),
     Promise = require("bluebird"),
     _ = require("lodash");
 
@@ -49,10 +48,12 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     state.original_data = _.clone(requestData.data, true);
 
     requestData.data = this._dataHandler.mapData(requestData.data, "server");
+
+    var controllerProvider = this._controllerProvider;
     //Get id field or his anchor data.
-    state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, ControllerProvider.ANCHOR_FIELD_ID) || "").toString();
+    state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, controllerProvider.ANCHOR_FIELD_ID) || "").toString();
     //Delete id field or his anchor.
-    requestData.data = this._dataHandler.deleteFieldDataByAnchor(requestData.data, ControllerProvider.ANCHOR_FIELD_ID);
+    requestData.data = this._dataHandler.deleteFieldDataByAnchor(requestData.data, controllerProvider.ANCHOR_FIELD_ID);
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;
@@ -122,14 +123,15 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
     var requestStateData = handlerData.request_data,
         action = requestStateData.action,
         data = handlerData.data,
+        controllerProvider = this._controllerProvider,
         collectionState = {
             handling: handlerData.handling,
-            field_id: this._dataHandler.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID),
+            field_id: this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
             field_order: null
         };
 
-    var fieldOrder = this._dataHandler.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ORDER);
-    if(this._controllerProvider.isFieldMapped(ControllerProvider.ANCHOR_FIELD_ORDER))
+    var fieldOrder = this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ORDER);
+    if(controllerProvider.isFieldMapped(controllerProvider.ANCHOR_FIELD_ORDER))
         collectionState.field_order = fieldOrder;
 
     if(action == "read") {

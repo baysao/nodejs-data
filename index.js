@@ -49,23 +49,27 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
 Controller.prototype.db = function(db) {this._model.setDb(db);};
 
 Controller.prototype.tree = function(db) {
-    var fieldsAnchors = {};
-    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
-    this._controllerProvider.setFieldsAnchors(fieldsAnchors);
+    var controllerProvider = this._controllerProvider,
+        fieldsAnchors = {};
 
-    this._controllerProvider.setDataType(ControllerProvider.DATA_TYPE_TREE);
+    fieldsAnchors[controllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
+    controllerProvider.setFieldsAnchors(fieldsAnchors);
+
+    controllerProvider.setDataType(controllerProvider.DATA_TYPE_TREE);
     this.db(db);
 };
 
 Controller.prototype.treeDynamic = function(db) {
-    var fieldsAnchors = {};
-    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
-    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_TREE_SELECTION] = "parent";
-    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN] = "webix_kids";
-    this._controllerProvider.setFieldsAnchors(fieldsAnchors);
+    var controllerProvider = this._controllerProvider,
+        fieldsAnchors = {};
 
-    this._controllerProvider.setDataType(ControllerProvider.DATA_TYPE_TREE);
-    this._controllerProvider.setDataLoadingType(ControllerProvider.LOADING_TYPE_DYNAMIC);
+    fieldsAnchors[controllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
+    fieldsAnchors[controllerProvider.ANCHOR_FIELD_TREE_SELECTION] = "parent";
+    fieldsAnchors[controllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN] = "webix_kids";
+    controllerProvider.setFieldsAnchors(fieldsAnchors);
+
+    controllerProvider.setDataType(controllerProvider.DATA_TYPE_TREE);
+    controllerProvider.setDataLoadingType(controllerProvider.LOADING_TYPE_DYNAMIC);
     this.db(db);
 };
 
