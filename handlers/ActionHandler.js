@@ -44,16 +44,15 @@ ActionHandler.prototype.processRequest = function(requestState, collectionState)
 };
 
 ActionHandler.prototype.getRequestStateData = function(requestData, state) {
-    debugger;
     state = state || {};
     requestData = _.clone(requestData, true);
     state.original_data = _.clone(requestData.data, true);
 
     requestData.data = this._dataHandler.mapData(requestData.data, "server");
     //Get id field or his anchor data.
-    state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, "id") || "").toString();
+    state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, ControllerProvider.ANCHOR_FIELD_ID) || "").toString();
     //Delete id field or his anchor.
-    requestData.data = this._dataHandler.deleteFieldDataByAnchor(requestData.data, "id");
+    requestData.data = this._dataHandler.deleteFieldDataByAnchor(requestData.data, ControllerProvider.ANCHOR_FIELD_ID);
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;

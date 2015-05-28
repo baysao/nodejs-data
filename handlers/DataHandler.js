@@ -9,7 +9,6 @@ function DataHandler(controllerProvider) {
     this._controllerProvider = controllerProvider;
 
     this._getTreeFields = function() {
-        debugger;
         var fields = {};
         fields.id = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
         fields.parent_id = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_PARENT_ID);
@@ -72,13 +71,11 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
 
     return controllerProvider.getModelObj().getData(collectionState).then(function(data) {
         if(dataType == ControllerProvider.DATA_TYPE_TREE) {
-            debugger;
             var treeObj = new Tree(data, self._getTreeFields());
-            if(controllerProvider.getDataLoadingType() == ControllerProvider.LOADING_TYPE_DYNAMIC) {
-                debugger;
-                data = treeObj.getItemChildren(0);
-            }
-            else
+            //if(controllerProvider.getDataLoadingType() == ControllerProvider.LOADING_TYPE_DYNAMIC) {
+            //    data = treeObj.getItemChildren(0);
+            //}
+            //else
                 data = treeObj.get();
         }
 

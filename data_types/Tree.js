@@ -120,7 +120,6 @@ Tree.prototype.getItemChildren = function(itemId) {
                 (itemId != Tree.ROOT_TREE_ID) && (element[self._field_id] == itemId)
             )
         ) {
-            debugger;
             if(element.hasOwnProperty("data")) {
                 delete element.data;
                 element[self._field_children] = true;
