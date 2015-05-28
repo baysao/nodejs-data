@@ -2,14 +2,21 @@ var ActionHandler = require("./handlers/ActionHandler"),
     ControllerProvider = require("./providers/ControllerProvider");
 
 function Controller(model, request) {
+
+    //If first argument is controller object, then copy its fields.
+    var baseControllerObj = {};
+    if(model instanceof Controller)
+        baseControllerObj = model;
+
     this._controllerProvider = new ControllerProvider(this);
-    this._model = model;
-    this._request = request;
-    this._data_type = "";
-    this._server_fields = {};
-    this._client_fields = {};
-    this._fields_anchors = {};
-    this._use_only_mapped_fields = false;
+    this._model = baseControllerObj._model || model;
+    this._request = baseControllerObj._request || request;
+    this._data_type = baseControllerObj._data_type || "";
+    this._data_loading_type = baseControllerObj._data_loading_type || "static";
+    this._server_fields = baseControllerObj._server_fields || {};
+    this._client_fields = baseControllerObj._client_fields || {};
+    this._fields_anchors = baseControllerObj._fields_anchors || {};
+    this._use_only_mapped_fields = baseControllerObj._use_only_mapped_fields || false;
 
     this._controllerProvider.setFieldsAnchors({id: "id", order: "order"});
 
@@ -25,11 +32,9 @@ function Controller(model, request) {
  * @returns {Controller}
  */
 Controller.prototype.map = function(fields, useOnlyMappedFields) {
-    var newObj = new Controller(this._model, this._request);
+    var newObj = new Controller(this);
     newObj._server_fields = fields;
-    newObj._fields_anchors = this._fields_anchors;
     newObj._use_only_mapped_fields = !!useOnlyMappedFields;
-    newObj._data_type = this._data_type;
 
     for(var key in fields)
         newObj._client_fields[fields[key]] = key;
@@ -44,14 +49,23 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
 Controller.prototype.db = function(db) {this._model.setDb(db);};
 
 Controller.prototype.tree = function(db) {
-    this._controllerProvider.setFieldsAnchors({parent_id: "parent"});
-    this._controllerProvider.setDataType("tree");
+    var fieldsAnchors = {};
+    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
+    this._controllerProvider.setFieldsAnchors(fieldsAnchors);
+
+    this._controllerProvider.setDataType(ControllerProvider.DATA_TYPE_TREE);
     this.db(db);
 };
 
 Controller.prototype.treeDynamic = function(db) {
-    this._controllerProvider.setFieldsAnchors({parent_id: "parent"});
-    this._controllerProvider.setDataType("tree");
+    var fieldsAnchors = {};
+    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
+    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_TREE_SELECTION] = "parent";
+    fieldsAnchors[ControllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN] = "webix_kids";
+    this._controllerProvider.setFieldsAnchors(fieldsAnchors);
+
+    this._controllerProvider.setDataType(ControllerProvider.DATA_TYPE_TREE);
+    this._controllerProvider.setDataLoadingType(ControllerProvider.LOADING_TYPE_DYNAMIC);
     this.db(db);
 };
 

@@ -2,6 +2,16 @@ function ControllerProvider(controllerObj) {
     this._controller = controllerObj;
 }
 
+ControllerProvider.DATA_TYPE_DEFAULT = "default";
+ControllerProvider.DATA_TYPE_TREE = "tree";
+ControllerProvider.LOADING_TYPE_STATIC = "static";
+ControllerProvider.LOADING_TYPE_DYNAMIC = "dynamic";
+ControllerProvider.ANCHOR_FIELD_ID = "id";
+ControllerProvider.ANCHOR_FIELD_PARENT_ID = "parent_id";
+ControllerProvider.ANCHOR_FIELD_ORDER = "order";
+ControllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN = "$tree_node_has_childer";
+ControllerProvider.ANCHOR_FIELD_TREE_SELECTION = "$tree_selection_field_id";
+
 ControllerProvider.prototype.getModelObj = function() {
     return this._controller._model;
 }
@@ -41,6 +51,15 @@ ControllerProvider.prototype.isFieldMapped = function(field) {
 
 ControllerProvider.prototype.getUseOnlyMappedFields = function() {
     return this._controller._use_only_mapped_fields;
+}
+
+ControllerProvider.prototype.setDataLoadingType = function(dataLoadingType) {
+    this._controller._data_loading_type = dataLoadingType;
+    return this;
+}
+
+ControllerProvider.prototype.getDataLoadingType = function() {
+    return this._controller._data_loading_type;
 }
 
 module.exports = ControllerProvider;

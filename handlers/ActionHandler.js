@@ -1,4 +1,5 @@
-var DataHandler = require("./DataHandler"),
+var ControllerProvider = require("../providers/ControllerProvider"),
+    DataHandler = require("./DataHandler"),
     Promise = require("bluebird"),
     _ = require("lodash");
 
@@ -11,7 +12,7 @@ ActionHandler.prototype.processRequest = function(requestState, collectionState)
     var actionPromise;
     switch(requestState.action) {
         case "read":
-            actionPromise = this._dataHandler.getData(collectionState);
+            actionPromise = this._dataHandler.getData(requestState, collectionState);
             break;
 
         case "insert":
@@ -43,8 +44,10 @@ ActionHandler.prototype.processRequest = function(requestState, collectionState)
 };
 
 ActionHandler.prototype.getRequestStateData = function(requestData, state) {
+    debugger;
     state = state || {};
     requestData = _.clone(requestData, true);
+    state.original_data = _.clone(requestData.data, true);
 
     requestData.data = this._dataHandler.mapData(requestData.data, "server");
     //Get id field or his anchor data.
@@ -122,12 +125,12 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
         data = handlerData.data,
         collectionState = {
             handling: handlerData.handling,
-            field_id: this._dataHandler.getFieldByAnchor("id"),
+            field_id: this._dataHandler.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID),
             field_order: null
         };
 
-    var fieldOrder = this._dataHandler.getFieldByAnchor("order");
-    if(this._controllerProvider.isFieldMapped("order"))
+    var fieldOrder = this._dataHandler.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ORDER);
+    if(this._controllerProvider.isFieldMapped(ControllerProvider.ANCHOR_FIELD_ORDER))
         collectionState.field_order = fieldOrder;
 
     if(action == "read") {

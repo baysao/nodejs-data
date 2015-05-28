@@ -1,13 +1,23 @@
 var _ = require("lodash");
 
 function _arrayToHash(dataArray, keyField) {
+    var handler = null;
+    if(typeof keyField == "function")
+        handler = keyField;
+
     var hash = {};
     for(var i = 0; i < dataArray.length; i++) {
-        var data = dataArray[i],
-            key = data[keyField];
+        var data = dataArray[i];
 
+        if(handler) {
+            handler(data);
+            continue;
+        }
+
+        var key = data[keyField];
         hash[key] = data;
     }
+
     return hash;
 }
 
@@ -16,14 +26,19 @@ function Tree(data, fields) {
 
     this._field_id = fields.id || "id" ;
     this._field_parent_id = fields.parent_id || "parent_id";
+    this._field_children = fields.children || "children";
+    this._elements = data;
 
     var dataTree = this._dataToTree(data);
-    this._elementsHash = dataTree.elements;
+    this._elementsHash = dataTree.elements_hash;
+    this._elements = dataTree.elements;
 
     this.get = function() {
         return dataTree.tree;
     }
 }
+
+Tree.ROOT_TREE_ID = 0;
 
 Tree.prototype._dataToTree = function(data) {
     data = _.clone(data, true);
@@ -32,8 +47,8 @@ Tree.prototype._dataToTree = function(data) {
         rootElements = [];
 
     for(var key in dataHash) {
-        var data = dataHash[key],
-            parentId = data[this._field_parent_id];
+        var node = dataHash[key],
+            parentId = node[this._field_parent_id];
 
         if(!dataHash.hasOwnProperty(parentId)) {
             rootElements.push(data);
@@ -42,7 +57,7 @@ Tree.prototype._dataToTree = function(data) {
 
         var parent = dataHash[parentId];
         parent.data = parent.data || [];
-        parent.data.push(data);
+        parent.data.push(node);
     }
 
     var rootObj = {};
@@ -53,7 +68,7 @@ Tree.prototype._dataToTree = function(data) {
         rootObj.data.push(rootElement);
     }
 
-    return {tree: rootObj, elements: dataHash};
+    return {tree: rootObj, elements: data, elements_hash: dataHash};
 };
 
 Tree.prototype._getElementById = function(id) {
@@ -88,6 +103,36 @@ Tree.prototype.getBranchElements = function(rootId) {
     _findBranchElements(rootElement);
 
     return branchElements;
+};
+
+Tree.prototype.getItemChildren = function(itemId) {
+    var elements = _.clone(this._elements, true),
+        children = [];
+
+    var self = this;
+
+    _arrayToHash(this._elements, function(element) {
+        if(
+            (
+                (itemId == Tree.ROOT_TREE_ID) && (element[self._field_parent_id] == itemId)
+            )
+            || (
+                (itemId != Tree.ROOT_TREE_ID) && (element[self._field_id] == itemId)
+            )
+        ) {
+            debugger;
+            if(element.hasOwnProperty("data")) {
+                delete element.data;
+                element[self._field_children] = true;
+            }
+            children.push(element);
+        }
+    });
+
+    var node = {};
+    node[this._field_parent_id] = itemId;
+    node.data = children;
+    return node;
 };
 
 module.exports = Tree;

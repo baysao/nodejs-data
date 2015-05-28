@@ -1,9 +1,21 @@
 var Promise = require("bluebird"),
+    ControllerProvider = require("../providers/ControllerProvider"),
     Tree = require("../data_types/Tree"),
     _ = require("lodash");
 
+
+
 function DataHandler(controllerProvider) {
     this._controllerProvider = controllerProvider;
+
+    this._getTreeFields = function() {
+        debugger;
+        var fields = {};
+        fields.id = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
+        fields.parent_id = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_PARENT_ID);
+        fields.children = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN);
+        return fields;
+    }
 }
 
 DataHandler.prototype.deleteData = function(requestState, collectionState) {
@@ -16,7 +28,7 @@ DataHandler.prototype.deleteData = function(requestState, collectionState) {
 
     var self = this;
     return this._controllerProvider.getModelObj().getData(collectionState).then(function(data) {
-        var treeObj = new Tree(data, self._controllerProvider.getFieldsAnchors()),
+        var treeObj = new Tree(data, self._getTreeFields()),
             branchElements = treeObj.getBranchElements(requestState.id),
             promises = [];
 
@@ -40,27 +52,34 @@ DataHandler.prototype.moveData = function(requestState, collectionState) {
 };
 
 DataHandler.prototype.updateData = function(requestState, collectionState) {
-    var fieldId = this.getFieldByAnchor("id");
+    var fieldId = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
     return this._controllerProvider.getModelObj().updateData(requestState.id, requestState.data, collectionState).then(function(updatedData) {
         return {status: "updated", source_id: requestState.id, target_id: updatedData[fieldId] || requestState.id};
     });
 };
 
 DataHandler.prototype.insertData = function(requestState, collectionState) {
-    var fieldId = this.getFieldByAnchor("id");
+    var fieldId = this.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID);
     return this._controllerProvider.getModelObj().insertData(requestState.data, collectionState).then(function(insertedData) {
         return {status: "inserted", source_id: requestState.id, target_id: insertedData[fieldId] || requestState.id};
     });
 };
 
-DataHandler.prototype.getData = function(collectionState) {
-    var dataType = this._controllerProvider.getDataType(),
+DataHandler.prototype.getData = function(requestState, collectionState) {
+    var controllerProvider = this._controllerProvider,
+        dataType = controllerProvider.getDataType(),
         self = this;
 
-    return this._controllerProvider.getModelObj().getData(collectionState).then(function(data) {
-        if(dataType == "tree") {
-            var treeObj = new Tree(data, self.getFieldByAnchor(self._controllerProvider.getFieldsAnchors()));
-            data = treeObj.get();
+    return controllerProvider.getModelObj().getData(collectionState).then(function(data) {
+        if(dataType == ControllerProvider.DATA_TYPE_TREE) {
+            debugger;
+            var treeObj = new Tree(data, self._getTreeFields());
+            if(controllerProvider.getDataLoadingType() == ControllerProvider.LOADING_TYPE_DYNAMIC) {
+                debugger;
+                data = treeObj.getItemChildren(0);
+            }
+            else
+                data = treeObj.get();
         }
 
         return {status: "read", data: data};
