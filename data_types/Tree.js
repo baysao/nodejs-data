@@ -51,7 +51,7 @@ Tree.prototype._dataToTree = function(data) {
             parentId = node[this._field_parent_id];
 
         if(!dataHash.hasOwnProperty(parentId)) {
-            rootElements.push(data);
+            rootElements.push(node);
             continue;
         }
 
@@ -112,20 +112,16 @@ Tree.prototype.getItemChildren = function(itemId) {
     var self = this;
 
     _arrayToHash(this._elements, function(element) {
-        if(
-            (
-                (itemId == Tree.ROOT_TREE_ID) && (element[self._field_parent_id] == itemId)
-            )
-            || (
-                (itemId != Tree.ROOT_TREE_ID) && (element[self._field_id] == itemId)
-            )
-        ) {
-            if(element.hasOwnProperty("data")) {
-                delete element.data;
-                element[self._field_children] = true;
-            }
-            children.push(element);
+        if(element[self._field_parent_id] != itemId)
+            return false;
+
+        if(element.hasOwnProperty("data")) {
+            delete element.data;
+            element[self._field_children] = true;
         }
+        children.push(element);
+
+        return true;
     });
 
     var node = {};

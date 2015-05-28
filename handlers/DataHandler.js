@@ -72,10 +72,23 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
     return controllerProvider.getModelObj().getData(collectionState).then(function(data) {
         if(dataType == ControllerProvider.DATA_TYPE_TREE) {
             var treeObj = new Tree(data, self._getTreeFields());
-            //if(controllerProvider.getDataLoadingType() == ControllerProvider.LOADING_TYPE_DYNAMIC) {
-            //    data = treeObj.getItemChildren(0);
-            //}
-            //else
+            if(controllerProvider.getDataLoadingType() == ControllerProvider.LOADING_TYPE_DYNAMIC) {
+                var anchorFieldTreeSelection = self.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_TREE_SELECTION),
+                    anchorFieldParentId = self.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_PARENT_ID),
+                    anchorFieldId = self.getFieldByAnchor(ControllerProvider.ANCHOR_FIELD_ID),
+                    treeItemId = "";
+
+                if(anchorFieldTreeSelection == anchorFieldParentId)
+                    treeItemId = self.getFieldDataByAnchor(requestState.data, ControllerProvider.ANCHOR_FIELD_PARENT_ID);
+                else if(anchorFieldTreeSelection == anchorFieldId)
+                    treeItemId = requestState.id;
+
+                if(!treeItemId)
+                    treeItemId = Tree.ROOT_TREE_ID;
+
+                data = treeObj.getItemChildren(treeItemId);
+            }
+            else
                 data = treeObj.get();
         }
 
