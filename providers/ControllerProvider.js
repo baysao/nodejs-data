@@ -1,3 +1,5 @@
+var EventsHandler = require("../handlers/EventsHandler");
+
 function ControllerProvider(controllerObj) {
     this.DATA_TYPE_DEFAULT = "default";
     this.DATA_TYPE_TREE = "tree";
@@ -7,9 +9,11 @@ function ControllerProvider(controllerObj) {
     this.ANCHOR_FIELD_PARENT_ID = "parent_id";
     this.ANCHOR_FIELD_ORDER = "order";
     this.ANCHOR_FIELD_NODE_HAS_CHILDREN = "$tree_node_has_childer";
+    this.ANCHOR_FIELD_NODE_CHILDREN = "$tree_node_childer";
     this.ANCHOR_FIELD_TREE_SELECTION = "$tree_selection_field_id";
 
     this._controller = controllerObj;
+    this._events = new EventsHandler();
 }
 
 ControllerProvider.prototype.getModelObj = function() {

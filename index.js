@@ -18,7 +18,10 @@ function Controller(model, request) {
     this._fields_anchors = baseControllerObj._fields_anchors || {};
     this._use_only_mapped_fields = baseControllerObj._use_only_mapped_fields || false;
 
-    this._controllerProvider.setFieldsAnchors({id: "id", order: "order"});
+    if(baseControllerObj instanceof Controller)
+        this._controllerProvider.setFieldsAnchors(this._controllerProvider.getFieldsAnchors());
+    else
+        this._controllerProvider.setFieldsAnchors({id: "id", order: "order"});
 
     var actionHandlerObj = new ActionHandler(this._controllerProvider);
     this.crud = actionHandlerObj.createActionHandler("crud");
@@ -53,6 +56,7 @@ Controller.prototype.tree = function(db) {
         fieldsAnchors = {};
 
     fieldsAnchors[controllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
+    fieldsAnchors[controllerProvider.ANCHOR_FIELD_NODE_CHILDREN] = "data";
     controllerProvider.setFieldsAnchors(fieldsAnchors);
 
     controllerProvider.setDataType(controllerProvider.DATA_TYPE_TREE);

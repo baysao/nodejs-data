@@ -11,7 +11,8 @@ function DataHandler(controllerProvider) {
         var fields = {};
         fields.id = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID);
         fields.parent_id = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_PARENT_ID);
-        fields.children = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN);
+        fields.field_is_has_children = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_NODE_HAS_CHILDREN);
+        fields.field_children = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_NODE_CHILDREN);
         return fields;
     }
 }
