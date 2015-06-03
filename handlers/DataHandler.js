@@ -101,13 +101,14 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
 };
 
 DataHandler.prototype.mapData = function(data, fieldsType) {
-    var self = this;
+    var useOnlyMapped = this._controllerProvider.getUseOnlyMappedFields();
+
     function _map(data, fields) {
         var mappedData = Array.isArray(data) ? [] : {};
         for(var key in data) {
             if(fields.hasOwnProperty(key))
                 mappedData[fields[key]] = data[key];
-            else if(!self._controllerProvider.getUseOnlyMappedFields())
+            else if(!useOnlyMapped)
                 mappedData[key] = data[key];
         }
         return mappedData;
@@ -122,6 +123,24 @@ DataHandler.prototype.mapData = function(data, fieldsType) {
 
     var fields = this._controllerProvider.getFields(fieldsType);
     return _map(data, fields);
+};
+
+DataHandler.prototype.mapFields = function(fields, fieldsType) {
+    var self = this;
+    function _map(field) {
+        var controllerFields = self._controllerProvider.getFields(fieldsType);
+        return controllerFields[field] || field;
+    }
+    var mappedFields = [];
+
+    if(typeof fields == "object") {
+        for (var key in fields)
+            mappedFields[key] = _map(fields[key]);
+    }
+    else
+        mappedFields = _map(fields);
+
+    return mappedFields;
 };
 
 DataHandler.prototype.getFieldByAnchor = function(anchor) {

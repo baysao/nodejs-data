@@ -1,5 +1,6 @@
 var DataHandler = require("./DataHandler"),
     Promise = require("bluebird"),
+    FilterHandler = require("../handlers/FilterHandler"),
     _ = require("lodash");
 
 function ActionHandler(controllerProvider) {
@@ -59,7 +60,8 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
 };
 
 ActionHandler.prototype.createActionHandler = function(action) {
-    var self = this;
+    var self = this,
+        requestObj = this._controllerProvider.getRequestObj();
 
     return function(handling, handler) {
         if((arguments.length == 1) && (typeof handling == "function")) {
@@ -69,9 +71,29 @@ ActionHandler.prototype.createActionHandler = function(action) {
 
         return function(request, response) {
             var state = {request: request, response: response};
-            self._controllerProvider.getRequestObj().processRequest(state, function(requestData, requestResolver) {
+            requestObj.processRequest(state, function(requestData, requestResolver) {
                 var requestStateData = self.getRequestStateData(requestData),
-                    actionHandlerData = {handler_action: action, request_data: requestStateData};
+                    actionHandlerData = {
+                        handler_action: action,
+                        request_data: requestStateData
+                    };
+
+                var filter = new FilterHandler(requestData.filter);
+                filter.eachField(function(field) {
+                    return self._dataHandler.mapFields(field, "server");
+                });
+
+                filter.eachFilter(function(filterData) {
+                    filterData.field = self._dataHandler.mapFields(filterData.field, "server");
+                    return filterData;
+                });
+
+                filter.eachSort(function(sortData) {
+                    sortData.field = self._dataHandler.mapFields(sortData.field, "server");
+                    return sortData;
+                });
+
+                actionHandlerData.filter = filter;
 
                 function _resolver(error, data) {
                     if(error) {
@@ -125,7 +147,8 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
         collectionState = {
             handling: handlerData.handling,
             field_id: this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
-            field_order: null
+            field_order: null,
+            filter: handlerData.filter
         };
 
     var fieldOrder = this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ORDER);
