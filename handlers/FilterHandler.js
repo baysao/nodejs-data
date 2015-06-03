@@ -67,6 +67,10 @@ FilterHandler.prototype.getFields = function () {
     return this._fields;
 }
 
+FilterHandler.prototype.getLimit = function () {
+    return this._limit;
+}
+
 FilterHandler.prototype.eachField = function(callback) {
     var fields = this._fields;
     for(var key in fields) {
