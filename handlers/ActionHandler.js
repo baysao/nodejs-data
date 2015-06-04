@@ -146,14 +146,16 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
         controllerProvider = this._controllerProvider,
         collectionState = {
             handling: handlerData.handling,
-            field_id: this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
-            field_order: null,
-            filter: handlerData.filter
+            filter: handlerData.filter,
+            fields: {
+                id: this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
+                order: null
+            }
         };
 
     var fieldOrder = this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ORDER);
     if(controllerProvider.isFieldMapped(controllerProvider.ANCHOR_FIELD_ORDER))
-        collectionState.field_order = fieldOrder;
+        collectionState.fields.order = fieldOrder;
 
     if(action == "read") {
         if(data) {

@@ -13,7 +13,7 @@ function ControllerProvider(controllerObj) {
     this.ANCHOR_FIELD_TREE_SELECTION = "$tree_selection_field_id";
 
     this._controller = controllerObj;
-    this._events = new EventsHandler();
+    this.events = new EventsHandler();
 }
 
 ControllerProvider.prototype.getModelObj = function() {

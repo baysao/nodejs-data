@@ -2,8 +2,6 @@ var Promise = require("bluebird"),
     Tree = require("../data_types/Tree"),
     _ = require("lodash");
 
-
-
 function DataHandler(controllerProvider) {
     this._controllerProvider = controllerProvider;
 
@@ -20,8 +18,8 @@ function DataHandler(controllerProvider) {
 DataHandler.prototype.deleteData = function(requestState, collectionState) {
     var dataType = this._controllerProvider.getDataType();
     if(dataType != "tree") {
-        return this._controllerProvider.getModelObj().removeData(requestState.id, collectionState).then(function () {
-            return {status: "deleted", source_id: requestState.id, target_id: requestState.id};
+        return this._controllerProvider.getModelObj().removeData(requestState.id, collectionState).then(function(result) {
+            return {status: "deleted", state: result.state, source_id: requestState.id, target_id: requestState.id};
         });
     }
 

@@ -8,7 +8,7 @@ function Controller(model, request) {
     if(model instanceof Controller)
         baseControllerObj = model;
 
-    this._controllerProvider = new ControllerProvider(this);
+    this.controllerProvider = baseControllerObj.controllerProvider || new ControllerProvider(this);
     this._model = baseControllerObj._model || model;
     this._request = baseControllerObj._request || request;
     this._data_type = baseControllerObj._data_type || "";
@@ -19,11 +19,11 @@ function Controller(model, request) {
     this._use_only_mapped_fields = baseControllerObj._use_only_mapped_fields || false;
 
     if(baseControllerObj instanceof Controller)
-        this._controllerProvider.setFieldsAnchors(this._controllerProvider.getFieldsAnchors());
+        this.controllerProvider.setFieldsAnchors(this.controllerProvider.getFieldsAnchors());
     else
-        this._controllerProvider.setFieldsAnchors({id: "id", order: "order"});
+        this.controllerProvider.setFieldsAnchors({id: "id", order: "order"});
 
-    var actionHandlerObj = new ActionHandler(this._controllerProvider);
+    var actionHandlerObj = new ActionHandler(this.controllerProvider);
     this.crud = actionHandlerObj.createActionHandler("crud");
     this.data = actionHandlerObj.createActionHandler("data");
 }
@@ -52,7 +52,7 @@ Controller.prototype.map = function(fields, useOnlyMappedFields) {
 Controller.prototype.db = function(db) {this._model.setDb(db);};
 
 Controller.prototype.tree = function(db) {
-    var controllerProvider = this._controllerProvider,
+    var controllerProvider = this.controllerProvider,
         fieldsAnchors = {};
 
     fieldsAnchors[controllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
@@ -64,7 +64,7 @@ Controller.prototype.tree = function(db) {
 };
 
 Controller.prototype.treeDynamic = function(db) {
-    var controllerProvider = this._controllerProvider,
+    var controllerProvider = this.controllerProvider,
         fieldsAnchors = {};
 
     fieldsAnchors[controllerProvider.ANCHOR_FIELD_PARENT_ID] = "parent";
