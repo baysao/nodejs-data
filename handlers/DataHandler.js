@@ -59,6 +59,16 @@ DataHandler.prototype.updateData = function(requestState, collectionState) {
     });
 };
 
+DataHandler.prototype.replaceData = function(requestState, collectionState) {
+    var controllerProvider = this._controllerProvider,
+        fieldId = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID);
+
+    return controllerProvider.getModelObj().replaceData(requestState.id, requestState.data, collectionState).then(function(updatedData) {
+        return {status: "updated", source_id: requestState.id, target_id: updatedData[fieldId] || requestState.id};
+    });
+};
+
+
 DataHandler.prototype.insertData = function(requestState, collectionState) {
     var controllerProvider = this._controllerProvider,
         fieldId = this.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID);
