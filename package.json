@@ -1,6 +1,6 @@
 {
   "name": "webix-data",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Package for communication between request and db webix packages",
   "main": "index.js",
   "dependencies": {
