@@ -106,42 +106,33 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
     var controllerProvider = this._controllerProvider,
     dataType = controllerProvider.getDataType(),
     self = this;
-    if(requestState.id) {
-      return controllerProvider.getModelObj()
-      .getDataById(requestState.id, collectionState).then(function(data) {
+    return controllerProvider.getModelObj().getData(collectionState, requestState.id).then(function(data) {
+        if (dataType == controllerProvider.DATA_TYPE_TREE) {
+            var treeObj = new Tree(data, self._getTreeFields());
+            if (controllerProvider.getDataLoadingType() == controllerProvider.LOADING_TYPE_DYNAMIC) {
+                var anchorFieldTreeSelection = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_TREE_SELECTION),
+                anchorFieldParentId = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_PARENT_ID),
+                anchorFieldId = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
+                treeItemId = "";
+
+                if (anchorFieldTreeSelection == anchorFieldParentId)
+                    treeItemId = self.getFieldDataByAnchor(requestState.data, controllerProvider.ANCHOR_FIELD_PARENT_ID);
+                else if (anchorFieldTreeSelection == anchorFieldId)
+                    treeItemId = requestState.id;
+
+                if (!treeItemId)
+                    treeItemId = Tree.ROOT_TREE_ID;
+
+                data = treeObj.getItemChildren(treeItemId);
+            } else
+            data = treeObj.get();
+        }
+
         return {
             status: "read",
             data: data
-        }
-    })
-  }
-  return controllerProvider.getModelObj().getData(collectionState).then(function(data) {
-    if (dataType == controllerProvider.DATA_TYPE_TREE) {
-        var treeObj = new Tree(data, self._getTreeFields());
-        if (controllerProvider.getDataLoadingType() == controllerProvider.LOADING_TYPE_DYNAMIC) {
-            var anchorFieldTreeSelection = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_TREE_SELECTION),
-            anchorFieldParentId = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_PARENT_ID),
-            anchorFieldId = self.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
-            treeItemId = "";
-
-            if (anchorFieldTreeSelection == anchorFieldParentId)
-                treeItemId = self.getFieldDataByAnchor(requestState.data, controllerProvider.ANCHOR_FIELD_PARENT_ID);
-            else if (anchorFieldTreeSelection == anchorFieldId)
-                treeItemId = requestState.id;
-
-            if (!treeItemId)
-                treeItemId = Tree.ROOT_TREE_ID;
-
-            data = treeObj.getItemChildren(treeItemId);
-        } else
-        data = treeObj.get();
-    }
-
-    return {
-        status: "read",
-        data: data
-    };
-});
+        };
+    });
 };
 
 DataHandler.prototype.mapData = function(data, fieldsType) {
