@@ -106,7 +106,7 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
     var controllerProvider = this._controllerProvider,
     dataType = controllerProvider.getDataType(),
     self = this;
-    var filters = requestState.filters;
+    var filters = requestState.data && requestState.data._filters;
     console.log('requestState:');
     console.log(requestState);
     if(!filters) filters = {};
