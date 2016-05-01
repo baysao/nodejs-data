@@ -107,6 +107,8 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
     dataType = controllerProvider.getDataType(),
     self = this;
     var filters = requestState.filters;
+    console.log('requestState:');
+    console.log(requestState);
     if(!filters) filters = {};
     return controllerProvider.getModelObj().getData(collectionState, requestState.id, filters).then(function(data) {
         if (dataType == controllerProvider.DATA_TYPE_TREE) {
