@@ -63,6 +63,7 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;
+    state.filters = requestData.filters;
     return state;
 };
 
