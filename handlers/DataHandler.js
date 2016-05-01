@@ -106,11 +106,7 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
     var controllerProvider = this._controllerProvider,
     dataType = controllerProvider.getDataType(),
     self = this;
-    var filters = requestState.data && requestState.data._filters;
-    console.log('requestState:');
-    console.log(requestState);
-    if(!filters) filters = {};
-    return controllerProvider.getModelObj().getData(collectionState, requestState.id, filters).then(function(data) {
+    return controllerProvider.getModelObj().getData(collectionState, requestState.id).then(function(data) {
         if (dataType == controllerProvider.DATA_TYPE_TREE) {
             var treeObj = new Tree(data, self._getTreeFields());
             if (controllerProvider.getDataLoadingType() == controllerProvider.LOADING_TYPE_DYNAMIC) {
