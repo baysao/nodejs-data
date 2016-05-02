@@ -1,7 +1,7 @@
 var DataHandler = require("./DataHandler"),
-    Promise = require("bluebird"),
-    FilterHandler = require("../handlers/FilterHandler"),
-    _ = require("lodash");
+Promise = require("bluebird"),
+FilterHandler = require("../handlers/FilterHandler"),
+_ = require("lodash");
 
 function ActionHandler(controllerProvider) {
     this._controllerProvider = controllerProvider;
@@ -12,34 +12,34 @@ ActionHandler.prototype.processRequest = function(requestState, collectionState)
     var actionPromise;
     switch (requestState.action) {
         case "read":
-            actionPromise = this._dataHandler.getData(requestState, collectionState);
-            break;
+        actionPromise = this._dataHandler.getData(requestState, collectionState);
+        break;
 
         case "insert":
-            actionPromise = this._dataHandler.insertData(requestState, collectionState);
-            break;
+        actionPromise = this._dataHandler.insertData(requestState, collectionState);
+        break;
 
         case "update":
-            actionPromise = this._dataHandler.updateData(requestState, collectionState);
-            break;
+        actionPromise = this._dataHandler.updateData(requestState, collectionState);
+        break;
 
         case "replace":
-            actionPromise = this._dataHandler.replaceData(requestState, collectionState);
-            break;
+        actionPromise = this._dataHandler.replaceData(requestState, collectionState);
+        break;
 
         case "move":
-            actionPromise = this._dataHandler.moveData(requestState, collectionState);
-            break;
+        actionPromise = this._dataHandler.moveData(requestState, collectionState);
+        break;
 
         case "delete":
-            actionPromise = this._dataHandler.deleteData(requestState, collectionState);
-            break;
+        actionPromise = this._dataHandler.deleteData(requestState, collectionState);
+        break;
 
         default:
-            actionPromise = new Promise(function(reject) {
-                reject(new Error("Action '" + requestState.action + "' isn't support."));
-            });
-            break;
+        actionPromise = new Promise(function(reject) {
+            reject(new Error("Action '" + requestState.action + "' isn't support."));
+        });
+        break;
     }
 
     return actionPromise.error(function(error) {
@@ -53,26 +53,23 @@ ActionHandler.prototype.processRequest = function(requestState, collectionState)
 ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     state = state || {};
     requestData = _.clone(requestData, true);
-    console.log('requestData:');
-    console.log(requestData);
     requestData.data = this._dataHandler.mapData(requestData.data, "server");
 
     var controllerProvider = this._controllerProvider;
     //Get id field or his anchor data.
     state.id = (this._dataHandler.getFieldDataByAnchor(requestData.data, controllerProvider.ANCHOR_FIELD_ID) || "").toString();
     //Delete id field or his anchor.
-    requestData.data = this._dataHandler.deleteFieldDataByAnchor(requestData.data, controllerProvider.ANCHOR_FIELD_ID);
+    requestData.data = this._dataHandler.deleteFieldDataByAnchor(
+        requestData.data, controllerProvider.ANCHOR_FIELD_ID);
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;
-    console.log('state:');
-    console.log(state);
     return state;
 };
 
 ActionHandler.prototype.createActionHandler = function(action) {
     var self = this,
-        requestObj = this._controllerProvider.getRequestObj();
+    requestObj = this._controllerProvider.getRequestObj();
 
     return function(handling, handler) {
         if ((arguments.length == 1) && (typeof handling == "function")) {
@@ -87,10 +84,10 @@ ActionHandler.prototype.createActionHandler = function(action) {
             };
             requestObj.processRequest(state, function(requestData, requestResolver) {
                 var requestStateData = self.getRequestStateData(requestData),
-                    actionHandlerData = {
-                        handler_action: action,
-                        request_data: requestStateData
-                    };
+                actionHandlerData = {
+                    handler_action: action,
+                    request_data: requestStateData
+                };
 
                 var filter = new FilterHandler(requestData.filter);
                 filter.eachField(function(field) {
@@ -161,15 +158,15 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
     }
 
     var requestStateData = handlerData.request_data,
-        action = requestStateData.action,
-        data = handlerData.data,
-        controllerProvider = this._controllerProvider,
-        collectionState = {
-            handling: handlerData.handling,
-            field_id: this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
-            field_order: null,
-            filter: handlerData.filter
-        };
+    action = requestStateData.action,
+    data = handlerData.data,
+    controllerProvider = this._controllerProvider,
+    collectionState = {
+        handling: handlerData.handling,
+        field_id: this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ID),
+        field_order: null,
+        filter: handlerData.filter
+    };
 
     var fieldOrder = this._dataHandler.getFieldByAnchor(controllerProvider.ANCHOR_FIELD_ORDER);
     if (controllerProvider.isFieldMapped(controllerProvider.ANCHOR_FIELD_ORDER))
@@ -200,7 +197,7 @@ ActionHandler.prototype.processAction = function(handlerData, callback) {
         });
         return true;
     } else if (handlerData.handler_action == "data")
-        return false;
+    return false;
 
     if (data)
         requestStateData.data = data;
