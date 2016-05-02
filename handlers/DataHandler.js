@@ -127,7 +127,6 @@ DataHandler.prototype.getData = function(requestState, collectionState) {
             } else
             data = treeObj.get();
         }
-
         return {
             status: "read",
             data: data

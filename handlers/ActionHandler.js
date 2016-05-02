@@ -53,6 +53,8 @@ ActionHandler.prototype.processRequest = function(requestState, collectionState)
 ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     state = state || {};
     requestData = _.clone(requestData, true);
+    console.log('requestData:');
+    console.log(requestData);
     requestData.data = this._dataHandler.mapData(requestData.data, "server");
 
     var controllerProvider = this._controllerProvider;
@@ -63,6 +65,8 @@ ActionHandler.prototype.getRequestStateData = function(requestData, state) {
     state.action = state.action || requestData.action;
     delete requestData.action;
     state.data = requestData.data;
+    console.log('state:');
+    console.log(state);
     return state;
 };
 
