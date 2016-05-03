@@ -103,6 +103,8 @@ DataHandler.prototype.insertData = function(requestState, collectionState) {
 };
 
 DataHandler.prototype.getData = function(requestState, collectionState) {
+    console.log('collectionState');
+    console.log(collectionState);
     var controllerProvider = this._controllerProvider,
     dataType = controllerProvider.getDataType(),
     self = this;
